@@ -1,0 +1,145 @@
+[
+{
+"role": "user",
+"content": "write a stm32f103c8t6 motor foc usage example"
+},
+{
+"role": "assistant",
+"content": "Here's an example of Field-Oriented Control (FOC) for a motor using an STM32F103C8T6 microcontroller. This example assumes you're using a three-phase brushless DC motor (BLDC) or permanent magnet synchronous motor (PMSM). Note that this is a simplified example and may need adjustments based on your specific hardware setup and requirements.
+
+```c
+#include \"stm32f1xx_hal.h\"
+#include \"arm_math.h\"
+
+// Define ADC and PWM timer handles
+ADC_HandleTypeDef hadc1;
+TIM_HandleTypeDef htim1;
+
+// Motor parameters
+#define POLE_PAIRS 7
+#define MAX_CURRENT 10.0f
+#define KP 0.5f
+#define KI 0.1f
+
+// FOC variables
+float angle = 0.0f;
+float i_a = 0.0f, i_b = 0.0f, i_c = 0.0f;
+float i_alpha = 0.0f, i_beta = 0.0f;
+float i_d = 0.0f, i_q = 0.0f;
+float v_d = 0.0f, v_q = 0.0f;
+float v_alpha = 0.0f, v_beta = 0.0f;
+float v_a = 0.0f, v_b = 0.0f, v_c = 0.0f;
+
+// PI controller variables
+float error_d = 0.0f, error_q = 0.0f;
+float integral_d = 0.0f, integral_q = 0.0f;
+
+// Function prototypes
+void SystemClock_Config(void);
+void MX_GPIO_Init(void);
+void MX_ADC1_Init(void);
+void MX_TIM1_Init(void);
+void FOC_Init(void);
+void FOC_Update(void);
+
+int main(void)
+{
+    HAL_Init();
+    SystemClock_Config();
+    MX_GPIO_Init();
+    MX_ADC1_Init();
+    MX_TIM1_Init();
+    FOC_Init();
+
+    while (1)
+    {
+        FOC_Update();
+    }
+}
+
+void FOC_Init(void)
+{
+    // Start ADC in DMA mode
+    HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&i_a, 3);
+
+    // Start PWM timer
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+}
+
+void FOC_Update(void)
+{
+    // Read current sensors
+    i_a = (float)hadc1.Instance->DR[0] * (3.3f / 4096.0f);
+    i_b = (float)hadc1.Instance->DR[1] * (3.3f / 4096.0f);
+    i_c = (float)hadc1.Instance->DR[2] * (3.3f / 4096.0f);
+
+    // Clarke transform
+    i_alpha = i_a;
+    i_beta = (i_a + 2 * i_b) / SQRT3_F;
+
+    // Park transform
+    arm_clarke_f32(i_a, i_b, &i_alpha, &i_beta);
+    arm_park_f32(i_alpha, i_beta, &i_d, &i_q, arm_sin_f32(angle), arm_cos_f32(angle));
+
+    // PI control
+    error_d = 0 - i_d;  // d-axis current reference is typically 0
+    error_q = MAX_CURRENT - i_q;  // q-axis current controls torque
+
+    integral_d += error_d * KI;
+    integral_q += error_q * KI;
+
+    v_d = KP * error_d + integral_d;
+    v_q = KP * error_q + integral_q;
+
+    // Inverse Park transform
+    arm_inv_park_f32(v_d, v_q, &v_alpha, &v_beta, arm_sin_f32(angle), arm_cos_f32(angle));
+
+    // Space Vector Modulation
+    float t1 = v_beta;
+    float t2 = (-v_beta/2.0f + (SQRT3_F/2.0f) * v_alpha);
+    float t3 = (-v_beta/2.0f - (SQRT3_F/2.0f) * v_alpha);
+
+    float tmax = fmaxf(t1, fmaxf(t2, t3));
+    float tmin = fminf(t1, fminf(t2, t3));
+
+    float tcom = (tmax + tmin) / 2.0f;
+
+    v_a = t1 - tcom + 0.5f;
+    v_b = t2 - tcom + 0.5f;
+    v_c = t3 - tcom + 0.5f;
+
+    // Update PWM duty cycles
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, (uint32_t)(v_a * htim1.Init.Period));
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, (uint32_t)(v_b * htim1.Init.Period));
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, (uint32_t)(v_c * htim1.Init.Period));
+
+    // Update rotor angle (this should be replaced with actual rotor position feedback)
+    angle += 0.001f;
+    if (angle >= 2 * PI) angle -= 2 * PI;
+}
+
+// Add implementations for SystemClock_Config, MX_GPIO_Init, MX_ADC1_Init, and MX_TIM1_Init
+```
+
+This example demonstrates the basic structure of a FOC implementation:
+
+1. Initialize peripherals (ADC for current sensing, Timer for PWM generation).
+2. Read current sensor values.
+3. Perform Clarke and Park transforms to convert three-phase currents to d-q frame.
+4. Implement PI control for d and q axis currents.
+5. Perform inverse Park transform to get alpha-beta voltages.
+6. Use Space Vector Modulation to generate three-phase PWM signals.
+
+Note that this example is simplified and lacks several important features for a complete FOC implementation:
+
+1. Proper current scaling and offset compensation.
+2. Actual rotor position feedback (e.g., from an encoder or hall sensors).
+3. Proper startup and calibration procedures.
+4. Error handling and safety features.
+5. Speed control loop.
+
+You'll need to adapt this code to your specific hardware setup, including proper configuration of ADC, Timer, and GPIO pins. Also, ensure that you have the necessary power electronics (inverter) to drive the motor phases."
+}
+]

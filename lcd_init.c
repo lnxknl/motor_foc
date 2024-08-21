@@ -12,7 +12,7 @@ static void delay_ms(u32 ms)
       入口数据：dat  要写入的串行数据
       返回值：  无
 ******************************************************************************/
-void LCD_Writ_Bus(u8 dat) 
+void LCD_Writ_Bus(u8 dat) // @NOTE 
 {	
 	u8 i;
 	u8 temp[1];
@@ -32,7 +32,7 @@ void LCD_Writ_Bus(u8 dat)
 //		LCD_SCLK_Set();
 //		dat<<=1;
 //	}	
-	HAL_SPI_Transmit(&hspi3,temp,1,0xffff);
+	HAL_SPI_Transmit(&hspi3,temp,1,0xffff);// @NOTE 
   LCD_CS_Set();	
 }
 
@@ -53,7 +53,7 @@ void LCD_WR_DATA8(u8 dat)
       入口数据：dat 写入的数据
       返回值：  无
 ******************************************************************************/
-void LCD_WR_DATA(u16 dat)
+void LCD_WR_DATA(u16 dat)// @NOTE 
 {
 	LCD_Writ_Bus(dat>>8);
 	LCD_Writ_Bus(dat);

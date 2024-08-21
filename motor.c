@@ -81,7 +81,7 @@ static float angle_data_prev;
 float current_angle;
 float angle_prev;
 
-void board_config(void)
+void board_config(void)// @NOTE 
 {
 	HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_2);
@@ -118,7 +118,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc)//ADC回调函�
 
 
 
-void HAL_SYSTICK_Callback(void)
+void HAL_SYSTICK_Callback(void)// @NOTE ,core function
 {
 	
 	//500us if update, write HAL_InitTick()  1000U->2000U (1ms->500us)
@@ -141,7 +141,7 @@ void HAL_SYSTICK_Callback(void)
 	else
   { 
     bPID_Speed_Sampling_Time_500us = PID_SPEED_SAMPLING_TIME;
-		Speed_Fdk = velocity;	
+		Speed_Fdk = velocity;	// @NOTE 
     Speed_Pid_Calc(Speed_Ref,Speed_Fdk,&Speed_Pid_Out,&Speed_Pid);
 				
   }
@@ -188,7 +188,7 @@ void HAL_SYSTICK_Callback(void)
 
 
 /*FOC Core part 10Khz*/
-void foc_algorithm_step(void) 
+void foc_algorithm_step(void) // @NOTE 
 {
 
 	
@@ -222,7 +222,7 @@ void Start_Up(void)
 	Angle_To_Cos_Sin(0.0f,&Transf_Cos_Sin); 
 	Rev_Park_Transf(Voltage_DQ,Transf_Cos_Sin,&Voltage_Alpha_Beta); 
 	SVPWM_Calc(Voltage_Alpha_Beta,Udc,PWM_TIM_PULSE_TPWM);
-	State=RUN;
+	State=RUN;// @NOTE 
 }
 
 
@@ -249,8 +249,8 @@ float get_DC_BUS(void)
 	
 	if(temp<Udc*0.95 || temp>Udc*1.05)
 	{
-		shut_pwm();
-		State=FAULT;
+		shut_pwm();m
+		State=FAULT;// @NOTE 
 	}
 	return temp;
 

@@ -66,12 +66,12 @@ float kg_f_control(float target)
 
 
 
-void gui_init(void)
+void gui_init(void)// @NOTE 
 {
 	LCD_Init();
 	LCD_Fill(0,0,LCD_W,LCD_H,BLACK);
 }
-void dis_info_core(void)
+void dis_info_core(void)// @NOTE 
 {
 	if(State==RUN)
 		LCD_ShowString(0,0,"RUN",RED,WHITE,24,0);

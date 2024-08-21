@@ -17,7 +17,7 @@ void my_dis_fun(UG_S16 x,UG_S16 y,UG_COLOR color)
 								color       要填充的颜色
       返回值：  无
 ******************************************************************************/
-void LCD_Fill(u16 xsta,u16 ysta,u16 xend,u16 yend,u16 color)
+void LCD_Fill(u16 xsta,u16 ysta,u16 xend,u16 yend,u16 color)// @NOTE 
 {          
 	u16 i,j; 
 	LCD_Address_Set(xsta,ysta,xend-1,yend-1);//设置显示范围
